@@ -11,16 +11,11 @@
   const LINES_PER_PAGE = 15;
 
   const surahMap = new Map(surahs.map(s => [s[0], {id:s[0], name:s[1], ayahs:s[2]}]));
-  const ayahMarkerIndex = new Map();
   const ayahStartGL = new Map();
 
   for(let i=0;i<markers.length;i++){
     const m=markers[i];
-    if(m[1]===0){
-      const key=`${m[2]}:${m[3]}`;
-      ayahMarkerIndex.set(key,i);
-      ayahStartGL.set(key,m[0]);
-    }
+    if(m[1]===0) ayahStartGL.set(`${m[2]}:${m[3]}`,m[0]);
   }
 
   function keyOf(s,a){ return `${s}:${a}`; }
@@ -31,47 +26,115 @@
     return { page: Math.floor((gl-1)/LINES_PER_PAGE)+1, line: ((gl-1)%LINES_PER_PAGE)+1 };
   }
 
-  // Build a local 604-page index from the embedded Mushaf row markers.
-  // Each ayah occupies its start row through the row before the next marker.
-  // If two ayahs start on the same row, both are attached to that row.
-  const pages = Array.from({length:PAGE_COUNT+1}, (_,page) => page===0 ? null : ({
-    page,
-    lineVerseKeys: Array.from({length:LINES_PER_PAGE+1}, ()=>new Set()),
-    allVerseKeys: new Set()
-  }));
-  const ayahPages = new Map();
+  function emptyPage(page){
+    return {
+      page,
+      lineVerseKeys:Array.from({length:LINES_PER_PAGE+1},()=>new Set()),
+      allVerseKeys:new Set()
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Base embedded row map
+  // ---------------------------------------------------------------------------
+  // QDATA preserves the Quran text-row wrapping well, but its raw 15-row page
+  // slicing drifts in Juz 'Amma because headings/basmala consume printed rows.
+  // We first build the embedded row map, then remap pages 582–604 using the
+  // VERIFIED first-ayah boundary of each real Madani Mushaf page.
+  const rawPages = Array.from({length:PAGE_COUNT+1},(_,page)=>page===0?null:emptyPage(page));
 
   for(let i=0;i<markers.length;i++){
     const m=markers[i];
     if(m[1]!==0) continue;
     const startGL=m[0], surah=m[2], ayah=m[3], key=keyOf(surah,ayah);
-    const nextGL = i+1 < markers.length ? markers[i+1][0] : PAGE_COUNT*LINES_PER_PAGE+1;
-    const endGL = Math.max(startGL, nextGL-1);
-    const touched = new Set();
-    for(let gl=startGL; gl<=endGL && gl<=PAGE_COUNT*LINES_PER_PAGE; gl++){
+    const nextGL=i+1<markers.length ? markers[i+1][0] : PAGE_COUNT*LINES_PER_PAGE+1;
+    const endGL=Math.max(startGL,nextGL-1);
+    for(let gl=startGL;gl<=endGL && gl<=PAGE_COUNT*LINES_PER_PAGE;gl++){
       const {page,line}=pageLineFromGL(gl);
-      const p=pages[page];
-      p.lineVerseKeys[line].add(key);
-      p.allVerseKeys.add(key);
-      touched.add(page);
+      rawPages[page].lineVerseKeys[line].add(key);
+      rawPages[page].allVerseKeys.add(key);
     }
-    ayahPages.set(key,[...touched]);
   }
 
-  function pageUnits(info, selectedAyahs){
+  // Flatten Quran TEXT rows only (headers/basmala are absent from these sets).
+  // This keeps the exact Quran text-line wrapping from QDATA while allowing us
+  // to place the rows inside the correct physical Juz 'Amma page boundaries.
+  const textRows=[];
+  const firstTextRowForAyah=new Map();
+  for(let page=1;page<=PAGE_COUNT;page++){
+    for(let line=1;line<=LINES_PER_PAGE;line++){
+      const row=rawPages[page].lineVerseKeys[line];
+      if(!row || row.size===0) continue;
+      const copy=new Set(row);
+      const rowIndex=textRows.length;
+      textRows.push(copy);
+      for(const key of copy){
+        if(!firstTextRowForAyah.has(key)) firstTextRowForAyah.set(key,rowIndex);
+      }
+    }
+  }
+
+  // Real Madani 604-page starts for Juz 'Amma (pages 582–604).
+  // Page 582 is An-Naba 1 and page 604 is Al-Ikhlas 1.
+  const JUZ30_PAGE_STARTS=[
+    [582,78,1],[583,78,31],[584,79,16],[585,80,1],[586,81,1],[587,82,1],
+    [588,83,7],[589,83,35],[590,85,1],[591,86,1],[592,87,16],[593,89,1],
+    [594,89,24],[595,91,1],[596,92,15],[597,95,1],[598,97,1],[599,98,8],
+    [600,100,10],[601,103,1],[602,106,1],[603,109,1],[604,112,1]
+  ];
+
+  const pages=rawPages.slice();
+
+  function rebuildJuz30Pages(){
+    for(let i=0;i<JUZ30_PAGE_STARTS.length;i++){
+      const [page,surah,ayah]=JUZ30_PAGE_STARTS[i];
+      const startIdx=firstTextRowForAyah.get(keyOf(surah,ayah));
+      const next=JUZ30_PAGE_STARTS[i+1];
+      const endExclusive=next
+        ? firstTextRowForAyah.get(keyOf(next[1],next[2]))
+        : textRows.length;
+      if(startIdx===undefined || endExclusive===undefined || endExclusive<startIdx){
+        throw new Error(`تعذر بناء صفحة جزء عم ${page}`);
+      }
+      const info=emptyPage(page);
+      const pageRows=textRows.slice(startIdx,endExclusive);
+      // The physical page is always one unit (=15) when fully selected; for a
+      // boundary page we only need its Quran text rows, not header/basmala rows.
+      for(let j=0;j<pageRows.length && j<LINES_PER_PAGE;j++){
+        info.lineVerseKeys[j+1]=new Set(pageRows[j]);
+        for(const key of pageRows[j]) info.allVerseKeys.add(key);
+      }
+      pages[page]=info;
+    }
+  }
+  rebuildJuz30Pages();
+
+  // Rebuild ayah -> physical pages from the FINAL page map.
+  const ayahPages=new Map();
+  for(let page=1;page<=PAGE_COUNT;page++){
+    const info=pages[page];
+    if(!info) continue;
+    for(const key of info.allVerseKeys){
+      if(!ayahPages.has(key)) ayahPages.set(key,[]);
+      ayahPages.get(key).push(page);
+    }
+  }
+
+  function pageUnits(info,selectedAyahs){
     if(!info || info.allVerseKeys.size===0) return 0;
 
-    // A real printed page is one unit if all Quran text on it is selected.
+    // User rule: any fully covered physical Mushaf page = exactly one page,
+    // regardless of how many surahs, headings, or basmalas it contains.
     let fullPage=true;
     for(const key of info.allVerseKeys){
       if(!selectedAyahs.has(key)){ fullPage=false; break; }
     }
     if(fullPage) return LINES_PER_PAGE;
 
-    // Partial page: count Quran text rows only. Headers/basmala are not added
-    // as extra lines; they are absorbed when the entire physical page is selected.
+    // Only START/END boundary pages use line counting. Count Quran text rows
+    // touched by the selected ayahs; headings and basmala are never extra lines.
     let lines=0;
-    for(let line=1; line<=LINES_PER_PAGE; line++){
+    for(let line=1;line<=LINES_PER_PAGE;line++){
       const keys=info.lineVerseKeys[line];
       let hit=false;
       for(const key of keys){
@@ -82,10 +145,49 @@
     return lines;
   }
 
+  function juz30Units(selectedAyahs,touchedJuzPages){
+    if(!touchedJuzPages || touchedJuzPages.size===0) return 0;
+    const nums=[...touchedJuzPages].sort((a,b)=>a-b);
+    const min=nums[0], max=nums[nums.length-1];
+    let total=0;
+    for(const page of nums){
+      // Juz 'Amma special rule agreed with the user:
+      // once a physical page lies BETWEEN the start and end boundary pages,
+      // it is one complete page regardless of how many surahs/headers it has
+      // or whether an endpoint-surah continuation also appears on that page.
+      if(page>min && page<max) total+=LINES_PER_PAGE;
+      else total+=pageUnits(pages[page],selectedAyahs);
+    }
+    return total;
+  }
+
+  function newAccumulator(){
+    return {
+      selectedAyahs:new Set(),
+      standardUnitsByPage:new Map(),
+      standardTotal:0,
+      touchedJuzPages:new Set()
+    };
+  }
+
+  function addAyahToAccumulator(acc,key){
+    acc.selectedAyahs.add(key);
+    for(const page of (ayahPages.get(key)||[])){
+      if(page>=582){
+        acc.touchedJuzPages.add(page);
+      }else{
+        const oldUnits=acc.standardUnitsByPage.get(page)||0;
+        const newUnits=pageUnits(pages[page],acc.selectedAyahs);
+        acc.standardUnitsByPage.set(page,newUnits);
+        acc.standardTotal+=newUnits-oldUnits;
+      }
+    }
+    return acc.standardTotal+juz30Units(acc.selectedAyahs,acc.touchedJuzPages);
+  }
+
   function calculatePlanEndpoint(startSurah,startAyah,pagesRequested,dir){
     const targetUnits=Number(pagesRequested)*LINES_PER_PAGE;
-    const selectedAyahs=new Set();
-    const countedUnitsByPage=new Map();
+    const acc=newAccumulator();
     let totalUnits=0;
     let surah=Number(startSurah);
     let ayah=Number(startAyah);
@@ -93,22 +195,14 @@
 
     while(surah>=1 && surah<=114){
       const maxAyah=surahAyahCount(surah);
-      for(let a=ayah; a<=maxAyah; a++){
-        const key=keyOf(surah,a);
-        selectedAyahs.add(key);
-        const affectedPages=ayahPages.get(key) || [];
-        for(const page of affectedPages){
-          const oldUnits=countedUnitsByPage.get(page) || 0;
-          const newUnits=pageUnits(pages[page],selectedAyahs);
-          countedUnitsByPage.set(page,newUnits);
-          totalUnits += newUnits-oldUnits;
-        }
+      for(let a=ayah;a<=maxAyah;a++){
+        totalUnits=addAyahToAccumulator(acc,keyOf(surah,a));
         if(totalUnits>=targetUnits){
           return {surah,ayah:a,clamped:false,units:totalUnits,targetUnits};
         }
       }
-      surah += step;
-      ayah = 1;
+      surah+=step;
+      ayah=1;
     }
 
     return dir==='down'
@@ -117,35 +211,26 @@
   }
 
   function rangeUnits(startSurah,startAyah,endSurah,endAyah,dir){
-    const selectedAyahs=new Set();
-    const countedUnitsByPage=new Map();
+    const acc=newAccumulator();
     let totalUnits=0;
-    let s=Number(startSurah), a=Number(startAyah);
+    let s=Number(startSurah),a=Number(startAyah);
     const step=dir==='down' ? -1 : 1;
     let guard=0;
     while(s>=1 && s<=114 && guard++<7000){
       const max=surahAyahCount(s);
       for(let x=a;x<=max;x++){
-        const key=keyOf(s,x); selectedAyahs.add(key);
-        for(const page of (ayahPages.get(key)||[])){
-          const oldUnits=countedUnitsByPage.get(page)||0;
-          const newUnits=pageUnits(pages[page],selectedAyahs);
-          countedUnitsByPage.set(page,newUnits);
-          totalUnits += newUnits-oldUnits;
-        }
+        totalUnits=addAyahToAccumulator(acc,keyOf(s,x));
         if(s===Number(endSurah) && x===Number(endAyah)) return totalUnits;
       }
-      s+=step; a=1;
+      s+=step;
+      a=1;
     }
     return null;
   }
 
-  // Calculate the exact inclusive monthly range between two entered points.
-  // Direction is inferred automatically from the surah numbers. Within one surah
-  // the reached ayah must be the same ayah or a later ayah.
   function calculateRangeSummary(startSurah,startAyah,endSurah,endAyah){
-    const s1=Number(startSurah), a1=Number(startAyah), s2=Number(endSurah), a2=Number(endAyah);
-    const max1=surahAyahCount(s1), max2=surahAyahCount(s2);
+    const s1=Number(startSurah),a1=Number(startAyah),s2=Number(endSurah),a2=Number(endAyah);
+    const max1=surahAyahCount(s1),max2=surahAyahCount(s2);
 
     if(!max1 || !Number.isInteger(a1) || a1<1 || a1>max1 ||
        !max2 || !Number.isInteger(a2) || a2<1 || a2>max2){
@@ -153,10 +238,7 @@
     }
 
     if(s1===s2 && a2<a1){
-      return {
-        valid:false,
-        message:'في السورة نفسها يجب أن تكون آية الوصول مساوية لآية البداية أو بعدها.'
-      };
+      return {valid:false,message:'في السورة نفسها يجب أن تكون آية الوصول مساوية لآية البداية أو بعدها.'};
     }
 
     const dir=s2<s1 ? 'down' : 'up';
@@ -183,15 +265,9 @@
     return `${whole} صفحة و${formatLines(lines)}`;
   }
 
-  // Validate that the requested number of pages actually exists from the
-  // starting ayah to the Quran boundary in the selected direction.
-  // An insufficient request must be reported as an error, never displayed
-  // as a shortened/clamped test plan.
   function validatePlanRequest(startSurah,startAyah,pagesRequested,dir){
     const result=calculatePlanEndpoint(startSurah,startAyah,pagesRequested,dir);
-    const shortfallUnits=result.clamped
-      ? Math.max(0,result.targetUnits-result.units)
-      : 0;
+    const shortfallUnits=result.clamped ? Math.max(0,result.targetUnits-result.units) : 0;
     return {
       ...result,
       enough:!result.clamped,
@@ -201,7 +277,7 @@
   }
 
   global.QuranCalc={
-    version:'Offline-Core-v1.2',
+    version:'Offline-Core-v1.3',
     dataVersion:global.MUSHAF_DATA_VERSION,
     surahs,
     surahName,
@@ -213,6 +289,6 @@
     rangeUnits,
     calculateRangeSummary,
     formatUnits,
-    _debug:{pages,ayahPages,ayahStartGL,keyOf}
+    _debug:{pages,rawPages,ayahPages,ayahStartGL,keyOf,JUZ30_PAGE_STARTS,textRows,firstTextRowForAyah}
   };
 })(window);
