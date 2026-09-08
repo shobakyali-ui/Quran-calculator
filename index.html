@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حاسبة صفحات اختبار الحفظ</title>
+<meta name="theme-color" content="#F7F1E3">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+
+  :root{
+    --paper:#F7F1E3;
+    --paper-2:#EFE6D0;
+    --ink:#1F3B36;
+    --ink-soft:#4A6B63;
+    --gold:#A87C2C;
+    --gold-soft:#D8B876;
+    --line:#D8CBA6;
+    --card:#FFFDF6;
+    --danger:#9C4A3B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Tajawal','Geeza Pro','Arial',sans-serif;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #fffef9 0%, var(--paper) 55%),
+      var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    padding:22px 14px 40px;
+  }
+  .wrap{max-width:520px;margin:0 auto;}
+
+  .masthead{
+    text-align:center;
+    margin-bottom:22px;
+    position:relative;
+    padding-bottom:16px;
+  }
+  .masthead::after{
+    content:"";
+    position:absolute;
+    bottom:0; left:50%;
+    transform:translateX(-50%);
+    width:120px;height:2px;
+    background:linear-gradient(90deg, transparent, var(--gold-soft), transparent);
+  }
+  .kicker{
+    font-family:'Amiri','Geeza Pro','Times New Roman',serif;
+    color:var(--gold);
+    font-size:15px;
+    letter-spacing:.5px;
+    margin:0 0 6px;
+  }
+  h1{
+    font-size:26px;
+    font-weight:900;
+    margin:0 0 6px;
+    color:var(--ink);
+  }
+  .sub{
+    color:var(--ink-soft);
+    font-size:14px;
+    margin:0;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 18px;
+    box-shadow:0 1px 0 rgba(0,0,0,0.02), 0 10px 30px -18px rgba(31,59,54,0.35);
+    margin-bottom:18px;
+  }
+
+  .field{margin-bottom:16px;}
+  .field:last-child{margin-bottom:0;}
+  label{
+    display:block;
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--ink);
+    margin-bottom:7px;
+  }
+  select, input[type=number]{
+    width:100%;
+    padding:11px 12px;
+    border-radius:9px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    font-family:'Tajawal','Geeza Pro','Arial',sans-serif;
+    font-size:15.5px;
+    color:var(--ink);
+    appearance:none;
+    -webkit-appearance:none;
+  }
+  select:focus, input:focus{
+    outline:none;
+    border-color:var(--gold);
+    box-shadow:0 0 0 3px rgba(168,124,44,0.12);
+  }
+  .row2{display:flex; gap:10px;}
+  .row2 > div{flex:1;}
+
+  .dir-toggle{
+    display:flex;
+    border:1.5px solid var(--line);
+    border-radius:9px;
+    overflow:hidden;
+  }
+  .dir-toggle button{
+    flex:1;
+    border:none;
+    background:#fff;
+    padding:10px 8px;
+    font-family:'Tajawal',sans-serif;
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .dir-toggle button.active{
+    background:var(--ink);
+    color:#fff;
+  }
+
+  .hint{font-size:12px;color:var(--ink-soft); margin-top:6px;}
+  .err{
+    font-size:13px;
+    color:var(--danger);
+    margin:10px 0 4px;
+    display:none;
+    background:#FFF4EF;
+    border:1px solid rgba(156,74,59,.28);
+    border-radius:10px;
+    padding:11px 12px;
+    line-height:1.75;
+    font-weight:600;
+  }
+
+  .go{
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(180deg, #24483F, #1F3B36);
+    color:#fff;
+    font-family:'Tajawal',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    cursor:pointer;
+    margin-top:4px;
+  }
+  .go:active{transform:translateY(1px);}
+
+  .result{display:none;}
+  .result.show{display:block;}
+
+  .range-card{
+    background:linear-gradient(180deg, #FFFDF6, #FBF4E3);
+    border:1.5px solid var(--gold-soft);
+    border-radius:14px;
+    padding:20px 18px;
+    text-align:center;
+    margin-bottom:14px;
+  }
+  .range-label{
+    font-size:12.5px;
+    color:var(--gold);
+    font-weight:700;
+    margin-bottom:10px;
+  }
+  .endpoint{
+    font-family:'Amiri','Geeza Pro','Times New Roman',serif;
+    font-size:21px;
+    font-weight:700;
+    color:var(--ink);
+    line-height:1.5;
+  }
+  .endpoint .surah{color:var(--ink);}
+  .endpoint .ayah{color:var(--gold);}
+  .arrow-sep{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:10px 0;
+    color:var(--ink-soft);
+  }
+  .arrow-sep::before, .arrow-sep::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+  .arrow-sep span{font-size:12px;white-space:nowrap;}
+
+  .detail-grid{
+    display:flex;
+    gap:10px;
+  }
+  .detail-box{
+    flex:1;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 12px;
+  }
+  .detail-box .t{font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:700;}
+  .detail-box .v{font-size:14.5px;font-weight:700;color:var(--ink);}
+  .detail-box .p{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+
+  .note{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    text-align:center;
+    margin-top:14px;
+    line-height:1.7;
+  }
+  .note b{color:var(--ink);}
+
+  .section-heading{
+    text-align:center;
+    margin:30px 0 14px;
+  }
+  .section-heading h2{
+    margin:0 0 5px;
+    font-size:22px;
+    font-weight:900;
+    color:var(--ink);
+  }
+  .section-heading p{
+    margin:0;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    line-height:1.7;
+  }
+  .point-row{
+    display:grid;
+    grid-template-columns:minmax(0,2fr) minmax(95px,1fr);
+    gap:10px;
+  }
+  .monthly-total{
+    font-size:20px;
+    font-weight:900;
+    color:var(--gold);
+    margin:2px 0 14px;
+  }
+  @media (max-width:390px){
+    .point-row{grid-template-columns:minmax(0,1.65fr) minmax(82px,.85fr);}
+  }
+
+  .signature{
+    margin:18px 0 4px;
+    text-align:center;
+    font-family:'Tajawal','Geeza Pro','Arial',sans-serif;
+    font-size:14px;
+    line-height:1.8;
+    color:var(--ink-soft);
+    font-weight:500;
+  }
+  .signature .sig-name{
+    color:var(--ink);
+    font-weight:700;
+  }
+
+  footer{
+    text-align:center;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:26px;
+    opacity:.75;
+  }
+  .compat-note{font-size:11.5px;color:var(--ink-soft);text-align:center;margin:10px 6px 0;line-height:1.6;opacity:.8;}
+  .noscript-warning{background:#fff4e5;border:1px solid #e4bf7b;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:12.5px;color:#6c4b16;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <p class="kicker">﴿ وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا ﴾</p>
+    <h1>حاسبة صفحات اختبار الحفظ</h1>
+    <p class="sub">وفق مصحف المدينة المنورة — 604 صفحة</p>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label>السورة التي بدأ منها الطالب</label>
+      <select id="surahSelect" aria-label="اختر السورة">
+        <option value="1">1. الفاتحة (7 آية)</option>
+        <option value="2">2. البقرة (286 آية)</option>
+        <option value="3">3. آل عمران (200 آية)</option>
+        <option value="4">4. النساء (176 آية)</option>
+        <option value="5">5. المائدة (120 آية)</option>
+        <option value="6">6. الأنعام (165 آية)</option>
+        <option value="7">7. الأعراف (206 آية)</option>
+        <option value="8">8. الأنفال (75 آية)</option>
+        <option value="9">9. التوبة (129 آية)</option>
+        <option value="10">10. يونس (109 آية)</option>
+        <option value="11">11. هود (123 آية)</option>
+        <option value="12">12. يوسف (111 آية)</option>
+        <option value="13">13. الرعد (43 آية)</option>
+        <option value="14">14. إبراهيم (52 آية)</option>
+        <option value="15">15. الحجر (99 آية)</option>
+        <option value="16">16. النحل (128 آية)</option>
+        <option value="17">17. الإسراء (111 آية)</option>
+        <option value="18">18. الكهف (110 آية)</option>
+        <option value="19">19. مريم (98 آية)</option>
+        <option value="20">20. طه (135 آية)</option>
+        <option value="21">21. الأنبياء (112 آية)</option>
+        <option value="22">22. الحج (78 آية)</option>
+        <option value="23">23. المؤمنون (118 آية)</option>
+        <option value="24">24. النور (64 آية)</option>
+        <option value="25">25. الفرقان (77 آية)</option>
+        <option value="26">26. الشعراء (227 آية)</option>
+        <option value="27">27. النمل (93 آية)</option>
+        <option value="28">28. القصص (88 آية)</option>
+        <option value="29">29. العنكبوت (69 آية)</option>
+        <option value="30">30. الروم (60 آية)</option>
+        <option value="31">31. لقمان (34 آية)</option>
+        <option value="32">32. السجدة (30 آية)</option>
+        <option value="33">33. الأحزاب (73 آية)</option>
+        <option value="34">34. سبأ (54 آية)</option>
+        <option value="35">35. فاطر (45 آية)</option>
+        <option value="36">36. يس (83 آية)</option>
+        <option value="37">37. الصافات (182 آية)</option>
+        <option value="38">38. ص (88 آية)</option>
+        <option value="39">39. الزمر (75 آية)</option>
+        <option value="40">40. غافر (85 آية)</option>
+        <option value="41">41. فصلت (54 آية)</option>
+        <option value="42">42. الشورى (53 آية)</option>
+        <option value="43">43. الزخرف (89 آية)</option>
+        <option value="44">44. الدخان (59 آية)</option>
+        <option value="45">45. الجاثية (37 آية)</option>
+        <option value="46">46. الأحقاف (35 آية)</option>
+        <option value="47">47. محمد (38 آية)</option>
+        <option value="48">48. الفتح (29 آية)</option>
+        <option value="49">49. الحجرات (18 آية)</option>
+        <option value="50">50. ق (45 آية)</option>
+        <option value="51">51. الذاريات (60 آية)</option>
+        <option value="52">52. الطور (49 آية)</option>
+        <option value="53">53. النجم (62 آية)</option>
+        <option value="54">54. القمر (55 آية)</option>
+        <option value="55">55. الرحمن (78 آية)</option>
+        <option value="56">56. الواقعة (96 آية)</option>
+        <option value="57">57. الحديد (29 آية)</option>
+        <option value="58">58. المجادلة (22 آية)</option>
+        <option value="59">59. الحشر (24 آية)</option>
+        <option value="60">60. الممتحنة (13 آية)</option>
+        <option value="61">61. الصف (14 آية)</option>
+        <option value="62">62. الجمعة (11 آية)</option>
+        <option value="63">63. المنافقون (11 آية)</option>
+        <option value="64">64. التغابن (18 آية)</option>
+        <option value="65">65. الطلاق (12 آية)</option>
+        <option value="66">66. التحريم (12 آية)</option>
+        <option value="67">67. الملك (30 آية)</option>
+        <option value="68">68. القلم (52 آية)</option>
+        <option value="69">69. الحاقة (52 آية)</option>
+        <option value="70">70. المعارج (44 آية)</option>
+        <option value="71">71. نوح (28 آية)</option>
+        <option value="72">72. الجن (28 آية)</option>
+        <option value="73">73. المزمل (20 آية)</option>
+        <option value="74">74. المدثر (56 آية)</option>
+        <option value="75">75. القيامة (40 آية)</option>
+        <option value="76">76. الإنسان (31 آية)</option>
+        <option value="77">77. المرسلات (50 آية)</option>
+        <option value="78">78. النبأ (40 آية)</option>
+        <option value="79">79. النازعات (46 آية)</option>
+        <option value="80">80. عبس (42 آية)</option>
+        <option value="81">81. التكوير (29 آية)</option>
+        <option value="82">82. الانفطار (19 آية)</option>
+        <option value="83">83. المطففين (36 آية)</option>
+        <option value="84">84. الانشقاق (25 آية)</option>
+        <option value="85">85. البروج (22 آية)</option>
+        <option value="86">86. الطارق (17 آية)</option>
+        <option value="87">87. الأعلى (19 آية)</option>
+        <option value="88">88. الغاشية (26 آية)</option>
+        <option value="89">89. الفجر (30 آية)</option>
+        <option value="90">90. البلد (20 آية)</option>
+        <option value="91">91. الشمس (15 آية)</option>
+        <option value="92">92. الليل (21 آية)</option>
+        <option value="93">93. الضحى (11 آية)</option>
+        <option value="94">94. الشرح (8 آية)</option>
+        <option value="95">95. التين (8 آية)</option>
+        <option value="96">96. العلق (19 آية)</option>
+        <option value="97">97. القدر (5 آية)</option>
+        <option value="98">98. البينة (8 آية)</option>
+        <option value="99">99. الزلزلة (8 آية)</option>
+        <option value="100">100. العاديات (11 آية)</option>
+        <option value="101">101. القارعة (11 آية)</option>
+        <option value="102">102. التكاثر (8 آية)</option>
+        <option value="103">103. العصر (3 آية)</option>
+        <option value="104">104. الهمزة (9 آية)</option>
+        <option value="105">105. الفيل (5 آية)</option>
+        <option value="106">106. قريش (4 آية)</option>
+        <option value="107">107. الماعون (7 آية)</option>
+        <option value="108">108. الكوثر (3 آية)</option>
+        <option value="109">109. الكافرون (6 آية)</option>
+        <option value="110">110. النصر (3 آية)</option>
+        <option value="111">111. المسد (5 آية)</option>
+        <option value="112">112. الإخلاص (4 آية)</option>
+        <option value="113">113. الفلق (5 آية)</option>
+        <option value="114">114. الناس (6 آية)</option>
+      </select>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>رقم الآية</label>
+        <input type="number" id="ayahInput" min="1" value="1">
+      </div>
+      <div class="field">
+        <label>عدد الصفحات</label>
+        <input type="number" id="pagesInput" min="1" value="40">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>اتجاه العدّ</label>
+      <div class="dir-toggle">
+        <button type="button" id="btnDown" class="active">نزولًا (نحو الفاتحة)</button>
+        <button type="button" id="btnUp">صعودًا (نحو الناس)</button>
+      </div>
+      <p class="hint">نزولًا = نحو الفاتحة، وصعودًا = نحو الناس</p>
+    </div>
+
+    <p class="err" id="errBox"></p>
+    <button class="go" id="calcBtn" type="button">احسب نطاق الاختبار</button>
+    <noscript><div class="noscript-warning">هذه الأداة تحتاج JavaScript. افتح الملف في Safari أو Chrome، وليس داخل عارض الملفات.</div></noscript>
+  </div>
+
+  <div class="result" id="resultBox">
+    <div class="range-card">
+      <p class="range-label" id="planTitle">خطة الاختبار</p>
+      <div class="endpoint" id="fromPoint"></div>
+      <div class="arrow-sep"><span>إلى</span></div>
+      <div class="endpoint" id="toPoint"></div>
+    </div>
+    <p class="note" id="noteBox"></p>
+  </div>
+
+  <div class="section-heading">
+    <h2>حاسبة الخطة الشهرية</h2>
+    <p>أدخل موضع بداية الطالب وموضع وصوله لحساب ما أنجزه بالصفحات والأسطر.</p>
+  </div>
+
+  <div class="card" id="monthlyCard">
+    <div class="point-row">
+      <div class="field">
+        <label>السورة التي بدأ منها الطالب</label>
+        <select id="monthlyStartSurah" aria-label="سورة بداية الخطة الشهرية"></select>
+      </div>
+      <div class="field">
+        <label>رقم الآية</label>
+        <input type="number" id="monthlyStartAyah" min="1" value="1">
+      </div>
+    </div>
+
+    <div class="point-row">
+      <div class="field">
+        <label>السورة التي وصل إليها الطالب</label>
+        <select id="monthlyEndSurah" aria-label="سورة نهاية الخطة الشهرية"></select>
+      </div>
+      <div class="field">
+        <label>رقم الآية</label>
+        <input type="number" id="monthlyEndAyah" min="1" value="1">
+      </div>
+    </div>
+
+    <p class="err" id="monthlyErrBox"></p>
+    <button class="go" id="monthlyCalcBtn" type="button">احسب الخطة الشهرية</button>
+  </div>
+
+  <div class="result" id="monthlyResultBox">
+    <div class="range-card">
+      <p class="range-label">نتيجة الخطة الشهرية</p>
+      <div class="monthly-total" id="monthlyTotal"></div>
+      <div class="endpoint" id="monthlyFromPoint"></div>
+      <div class="arrow-sep"><span>إلى</span></div>
+      <div class="endpoint" id="monthlyToPoint"></div>
+    </div>
+    <p class="note" id="monthlyNoteBox"></p>
+  </div>
+
+  <footer>تُحسب الصفحة الحقيقية في مصحف المدينة كوحدة واحدة، وتُستخدم الأسطر فقط في الجزء غير المكتمل من الصفحة.</footer>
+
+  <div class="signature" aria-label="إعداد الأداة">
+    قام بإعداد هذه الأداة: <span class="sig-name">علي كامل الشوبكي</span>
+  </div>
+</div>
+
+
+<script src="mushaf-data.js"></script>
+<script src="calculator-core.js"></script>
+<script>
+(function(){
+  'use strict';
+  const calc=window.QuranCalc;
+  let direction='down';
+  const surahSelect=document.getElementById('surahSelect');
+  const ayahInput=document.getElementById('ayahInput');
+  const pagesInput=document.getElementById('pagesInput');
+  const errBox=document.getElementById('errBox');
+  const resultBox=document.getElementById('resultBox');
+  const monthlyStartSurah=document.getElementById('monthlyStartSurah');
+  const monthlyStartAyah=document.getElementById('monthlyStartAyah');
+  const monthlyEndSurah=document.getElementById('monthlyEndSurah');
+  const monthlyEndAyah=document.getElementById('monthlyEndAyah');
+  const monthlyErrBox=document.getElementById('monthlyErrBox');
+  const monthlyResultBox=document.getElementById('monthlyResultBox');
+
+  function formatFrom(surah,ayah){
+    return ayah===1 ? `من بداية سورة ${calc.surahName(surah)}` : `من بداية الآية ${ayah} من سورة ${calc.surahName(surah)}`;
+  }
+  function formatTo(surah,ayah){
+    return ayah===calc.surahAyahCount(surah) ? `إلى نهاية سورة ${calc.surahName(surah)}` : `إلى نهاية الآية ${ayah} من سورة ${calc.surahName(surah)}`;
+  }
+
+  surahSelect.value='57';
+  ayahInput.value='12';
+  ayahInput.max=calc.surahAyahCount(57);
+
+  surahSelect.addEventListener('change',function(){
+    const s=Number(this.value), max=calc.surahAyahCount(s);
+    ayahInput.max=max;
+    const current=Number(ayahInput.value);
+    if(!Number.isInteger(current)||current<1||current>max) ayahInput.value='1';
+  });
+
+  // Reuse the same 114-surah list for the monthly-plan calculator.
+  monthlyStartSurah.innerHTML=surahSelect.innerHTML;
+  monthlyEndSurah.innerHTML=surahSelect.innerHTML;
+  monthlyStartSurah.value='114';
+  monthlyEndSurah.value='113';
+  monthlyStartAyah.value='1';
+  monthlyEndAyah.value='5';
+
+  function syncMonthlyAyahMax(selectEl,inputEl){
+    const s=Number(selectEl.value), max=calc.surahAyahCount(s);
+    inputEl.max=max;
+    const current=Number(inputEl.value);
+    if(!Number.isInteger(current)||current<1||current>max) inputEl.value='1';
+  }
+  syncMonthlyAyahMax(monthlyStartSurah,monthlyStartAyah);
+  syncMonthlyAyahMax(monthlyEndSurah,monthlyEndAyah);
+  monthlyStartSurah.addEventListener('change',()=>syncMonthlyAyahMax(monthlyStartSurah,monthlyStartAyah));
+  monthlyEndSurah.addEventListener('change',()=>syncMonthlyAyahMax(monthlyEndSurah,monthlyEndAyah));
+
+  document.getElementById('btnDown').addEventListener('click',function(){
+    direction='down'; this.classList.add('active'); document.getElementById('btnUp').classList.remove('active');
+  });
+  document.getElementById('btnUp').addEventListener('click',function(){
+    direction='up'; this.classList.add('active'); document.getElementById('btnDown').classList.remove('active');
+  });
+
+  document.getElementById('calcBtn').addEventListener('click',function(){
+    errBox.style.display='none';
+    errBox.textContent='';
+    // Never leave an old successful result visible when the new request is invalid.
+    resultBox.classList.remove('show');
+    const surah=Number(surahSelect.value), ayah=Number(ayahInput.value), pages=Number(pagesInput.value);
+    const maxAyah=calc.surahAyahCount(surah);
+    if(!surah||!Number.isInteger(ayah)||ayah<1||ayah>maxAyah){
+      errBox.textContent=`سورة ${calc.surahName(surah)} تحتوي على ${maxAyah} آية — أدخل رقم آية صحيحًا.`;
+      errBox.style.display='block'; return;
+    }
+    if(!Number.isInteger(pages)||pages<1){
+      errBox.textContent='أدخل عدد صفحات صحيحًا (1 أو أكثر).'; errBox.style.display='block'; return;
+    }
+
+    const plan=calc.validatePlanRequest(surah,ayah,pages,direction);
+
+    if(!plan.enough){
+      const available=calc.formatUnits(plan.availableUnits);
+      const shortfall=calc.formatUnits(plan.shortfallUnits);
+      const directionName=direction==='up' ? 'نحو الناس' : 'نحو الفاتحة';
+      errBox.textContent=`تنبيه: المتبقي من موضع البداية إلى نهاية المصحف ${directionName} هو ${available} فقط، وهو أقل من خطة الاختبار المطلوبة (${pages} صفحة) بمقدار ${shortfall}. غيّر عدد الصفحات أو اتجاه العدّ.`;
+      errBox.style.display='block';
+      try{errBox.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(e){}
+      return;
+    }
+
+    document.getElementById('planTitle').textContent=`خطة الاختبار ${pages} صفحة`;
+    document.getElementById('fromPoint').textContent=formatFrom(surah,ayah);
+    document.getElementById('toPoint').textContent=formatTo(plan.surah,plan.ayah);
+    document.getElementById('noteBox').textContent='تُحسب الصفحة المطبوعة كوحدة كاملة عند دخول محتواها القرآني كله في النطاق، وتُستخدم الأسطر فقط في الجزء غير المكتمل من الصفحة.';
+    resultBox.classList.add('show');
+    try{resultBox.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(e){}
+  });
+
+  document.getElementById('monthlyCalcBtn').addEventListener('click',function(){
+    monthlyErrBox.style.display='none';
+    monthlyErrBox.textContent='';
+    monthlyResultBox.classList.remove('show');
+
+    const startSurah=Number(monthlyStartSurah.value);
+    const startAyah=Number(monthlyStartAyah.value);
+    const endSurah=Number(monthlyEndSurah.value);
+    const endAyah=Number(monthlyEndAyah.value);
+    const startMax=calc.surahAyahCount(startSurah);
+    const endMax=calc.surahAyahCount(endSurah);
+
+    if(!startSurah||!Number.isInteger(startAyah)||startAyah<1||startAyah>startMax){
+      monthlyErrBox.textContent=`سورة ${calc.surahName(startSurah)} تحتوي على ${startMax} آية — أدخل آية بداية صحيحة.`;
+      monthlyErrBox.style.display='block'; return;
+    }
+    if(!endSurah||!Number.isInteger(endAyah)||endAyah<1||endAyah>endMax){
+      monthlyErrBox.textContent=`سورة ${calc.surahName(endSurah)} تحتوي على ${endMax} آية — أدخل آية وصول صحيحة.`;
+      monthlyErrBox.style.display='block'; return;
+    }
+
+    const summary=calc.calculateRangeSummary(startSurah,startAyah,endSurah,endAyah);
+    if(!summary.valid){
+      monthlyErrBox.textContent=summary.message||'تعذر حساب النطاق بين الموضعين. راجع نقطة البداية ونقطة الوصول.';
+      monthlyErrBox.style.display='block';
+      try{monthlyErrBox.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(e){}
+      return;
+    }
+
+    document.getElementById('monthlyTotal').textContent=`الخطة الشهرية: ${calc.formatUnits(summary.units)}`;
+    document.getElementById('monthlyFromPoint').textContent=formatFrom(startSurah,startAyah);
+    document.getElementById('monthlyToPoint').textContent=formatTo(endSurah,endAyah);
+    document.getElementById('monthlyNoteBox').textContent='تُحسب الصفحات الكاملة كوحدات كاملة، وتُحسب الأسطر فقط في الجزء غير المكتمل من صفحة البداية أو النهاية، بنفس طريقة حاسبة اختبار الحفظ.';
+    monthlyResultBox.classList.add('show');
+    try{monthlyResultBox.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(e){}
+  });
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+  }
+})();
+</script>
+</body>
+</html>
