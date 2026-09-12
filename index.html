@@ -419,10 +419,10 @@
     <div class="field">
       <label>اتجاه العدّ</label>
       <div class="dir-toggle">
-        <button type="button" id="btnDown" class="active">نزولًا (نحو الفاتحة)</button>
-        <button type="button" id="btnUp">صعودًا (نحو الناس)</button>
+        <button type="button" id="btnDown" class="active">صعودًا (نحو الفاتحة)</button>
+        <button type="button" id="btnUp">نزولًا (نحو الناس)</button>
       </div>
-      <p class="hint">نزولًا = نحو الفاتحة، وصعودًا = نحو الناس</p>
+      <p class="hint">صعودًا = نحو الفاتحة، ونزولًا = نحو الناس</p>
     </div>
 
     <p class="err" id="errBox"></p>
@@ -441,7 +441,7 @@
   </div>
 
   <div class="section-heading">
-    <h2>حاسبة الخطة الشهرية</h2>
+    <h2>ما أنجزه الطالب</h2>
     <p>أدخل موضع بداية الطالب وموضع وصوله لحساب ما أنجزه بالصفحات والأسطر.</p>
   </div>
 
@@ -449,7 +449,7 @@
     <div class="point-row">
       <div class="field">
         <label>السورة التي بدأ منها الطالب</label>
-        <select id="monthlyStartSurah" aria-label="سورة بداية الخطة الشهرية"></select>
+        <select id="monthlyStartSurah" aria-label="سورة بداية ما أنجزه الطالب"></select>
       </div>
       <div class="field">
         <label>رقم الآية</label>
@@ -460,7 +460,7 @@
     <div class="point-row">
       <div class="field">
         <label>السورة التي وصل إليها الطالب</label>
-        <select id="monthlyEndSurah" aria-label="سورة نهاية الخطة الشهرية"></select>
+        <select id="monthlyEndSurah" aria-label="سورة نهاية ما أنجزه الطالب"></select>
       </div>
       <div class="field">
         <label>رقم الآية</label>
@@ -469,12 +469,12 @@
     </div>
 
     <p class="err" id="monthlyErrBox"></p>
-    <button class="go" id="monthlyCalcBtn" type="button">احسب الخطة الشهرية</button>
+    <button class="go" id="monthlyCalcBtn" type="button">احسب ما أنجزه الطالب</button>
   </div>
 
   <div class="result" id="monthlyResultBox">
     <div class="range-card">
-      <p class="range-label">نتيجة الخطة الشهرية</p>
+      <p class="range-label">نتيجة ما أنجزه الطالب</p>
       <div class="monthly-total" id="monthlyTotal"></div>
       <div class="endpoint" id="monthlyFromPoint"></div>
       <div class="arrow-sep"><span>إلى</span></div>
@@ -618,7 +618,7 @@
       return;
     }
 
-    document.getElementById('monthlyTotal').textContent=`الخطة الشهرية: ${calc.formatUnits(summary.units)}`;
+    document.getElementById('monthlyTotal').textContent=`ما أنجزه الطالب: ${calc.formatUnits(summary.units)}`;
     document.getElementById('monthlyFromPoint').textContent=formatFrom(startSurah,startAyah);
     document.getElementById('monthlyToPoint').textContent=formatTo(endSurah,endAyah);
     document.getElementById('monthlyNoteBox').textContent='تُحسب الصفحات الكاملة كوحدات كاملة، وتُحسب الأسطر فقط في الجزء غير المكتمل من صفحة البداية أو النهاية، بنفس طريقة حاسبة اختبار الحفظ.';
